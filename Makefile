@@ -6,7 +6,7 @@ SONAME := libuniso.so.$(ABI_VERSION)
 progs-y	+= uniso
 
 INCLUDES := uniso.h
-TARGETS := libuniso.a $(progs-y)
+TARGETS = libuniso.a $(progs-y) $(shlibs-y) $(lualibs-y)
 
 CFLAGS ?= -g -Wall -Werror
 CFLAGS += -fPIC
@@ -25,6 +25,10 @@ PKG_CONFIG ?= pkg-config
 
 LUA_LIBS ?= $(shell $(PKG_CONFIG) --libs lua)
 LUA_CFLAGS ?= $(shell $(PKG_CONFIG) --cflags lua)
+
+LUA_VERSION ?= 5.1
+LUA_LIBDIR ?= $(prefix)/lib/lua/$(LUA_VERSION)
+LUA_SHAREDIR ?= $(prefix)/share/lua/$(LUA_VERSION)
 
 install-progs-y := $(INSTALLDIR) $(DESTDIR)$(bindir) && \
 		   $(INSTALL) $(progs-y) $(DESTDIR)$(bindir)
@@ -53,12 +57,12 @@ UNISO_LIBS = -luniso
 else
 UNISO_LIBS = libuniso.a
 endif
-TARGETS += $(shlibs-y)
 
 ifneq ($(ENABLE_LUA),)
 lualibs-y += uniso.so
+install-lualibs-y := $(INSTALLDIR) $(DESTDIR)$(LUA_LIBDIR) && \
+		     $(INSTALL) uniso.so $(DESTDIR)$(LUA_LIBDIR)
 endif
-TARGETS += $(lualibs-y)
 
 all:	$(TARGETS)
 
@@ -93,4 +97,5 @@ install: $(TARGETS) $(INCLUDES)
 	$(install-progs-y)
 	$(install-libs-y)
 	$(install-shlibs-y)
+	$(install-lualibs-y)
 
