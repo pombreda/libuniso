@@ -4,7 +4,7 @@ SONAME := libuniso.so.$(ABI_VERSION)
 
 TARGETS := $(SONAME) libuniso.so uniso
 
-CFLAGS ?= -g -Wall 
+CFLAGS ?= -g -Wall -Werror
 CFLAGS += -fPIC
 CFLAGS += -I.
 

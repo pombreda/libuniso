@@ -355,7 +355,7 @@ static int queue_reader(
 
 	if (offset < ctx->pos) {
 		fprintf(stderr, "ERROR: non-linear reads are not supported "
-				"(asked %x, we are at %x)\n",
+				"(asked %zx, we are at %zx)\n",
 			offset, ctx->last_queued_read);
 		return -1;
 	}
@@ -465,7 +465,7 @@ static int uniso_read_directory(struct uniso_context *ctx,
 	struct uniso_dirent *dir = container_of(rd, struct uniso_dirent, reader);
 	struct isofs_directory_record *ide;
 	char buf[512], *name;
-	char *tmp;
+	unsigned char *tmp;
 	int r, i, offs;
 
 	if (ctx->loglevel > 1)
@@ -550,7 +550,7 @@ static int queue_dirent(struct uniso_context *ctx, void *isode, const char *name
 static int uniso_read_volume_descriptor(struct uniso_context *ctx,
 					struct uniso_reader *rd)
 {
-	char buf[ISOFS_BLOCK_SIZE];
+	unsigned char buf[ISOFS_BLOCK_SIZE];
 	struct isofs_volume_descriptor *vd = (void*) buf;
 	struct isofs_pri_sup_descriptor *pd = (void*) buf;
 	char root_dir[sizeof(pd->root_directory_record)];
@@ -632,5 +632,6 @@ int uniso(int fd, void (*progress_callback)(size_t, size_t, const char*, void *)
 
 	free(ctx->tmpbuf);
 	close(ctx->null_fd);
+	return 0;
 }
 
