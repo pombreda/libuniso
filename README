@@ -1,2 +1,10 @@
 libuniso is a simple C library to extract iso9660 images on the fly
 
+To build:
+
+  make
+
+To build with shared library:
+
+  make ENABLE_SHARED_LIB=yes
+
