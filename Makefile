@@ -3,11 +3,28 @@
 ABI_VERSION := 0
 SONAME := libuniso.so.$(ABI_VERSION)
 
-TARGETS := libuniso.a uniso
+progs-y	+= uniso
+
+INCLUDES := uniso.h
+TARGETS := libuniso.a $(progs-y)
 
 CFLAGS ?= -g -Wall -Werror
 CFLAGS += -fPIC
 CFLAGS += -I.
+
+
+prefix ?= /usr
+libdir = $(prefix)/lib
+bindir = $(prefix)/bin
+includedir= $(prefix)/include
+
+INSTALLDIR := install -d
+INSTALL := install
+
+install-progs-y := $(INSTALLDIR) $(DESTDIR)$(bindir) && \
+		   $(INSTALL) $(progs-y) $(DESTDIR)$(bindir)
+install-libs-y := $(INSTALLDIR) $(DESTDIR)$(libdir) && \
+		  $(INSTALL) libuniso.a $(DESTDIR)$(libdir)
 
 libuniso.a_OBJS = libuniso.o
 
@@ -21,6 +38,9 @@ all:	$(TARGETS)
 
 ifneq ($(ENABLE_SHARED_LIB),)
 shlibs-y += $(SONAME) libuniso.so
+install-shlibs-y := $(INSTALLDIR) $(DESTDIR)$(libdir) && \
+		    $(INSTALL) $(SONAME) $(DESTDIR)$(libdir) && \
+		    ln -sf $(SONAME) $(DESTDIR)$(libdir)/libuniso.so
 uniso_LIBS := -luniso
 else
 uniso_LIBS := libuniso.a
@@ -48,4 +68,11 @@ clean:
 	rm -f $(TARGETS) *.o *.a *.so *.so.$(ABI_VERSION)
 
 shared: $(SONAME)
+
+install: $(TARGETS) $(INCLUDES)
+	$(INSTALLDIR) $(DESTDIR)$(includedir)
+	$(INSTALL) $(INCLUDES) $(DESTDIR)$(includedir)
+	$(install-progs-y)
+	$(install-libs-y)
+	$(install-shlibs-y)
 
