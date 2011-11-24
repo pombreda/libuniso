@@ -31,27 +31,27 @@ install-progs-y := $(INSTALLDIR) $(DESTDIR)$(bindir) && \
 install-libs-y := $(INSTALLDIR) $(DESTDIR)$(libdir) && \
 		  $(INSTALL) libuniso.a $(DESTDIR)$(libdir)
 
-libuniso.a_OBJS = libuniso.o
+OBJS_libuniso.a = libuniso.o
 
-$(SONAME)_OBJS = $(libuniso.a_OBJS)
-$(SONAME)_LDFLAGS = -shared -Wl,-soname,$(SONAME)
+OBJS_$(SONAME) = $(OBJS_libuniso.a)
+LDFLAGS_$(SONAME) = -shared -Wl,-soname,$(SONAME)
 
-uniso_OBJS := uniso.o
-uniso_LIBS = $(LIBS_UNISO)
+OBJS_uniso := uniso.o
+LIBS_uniso = $(UNISO_LIBS)
 
-lua-uniso.o_CFLAGS = $(LUA_CFLAGS)
-uniso.so_OBJS = lua-uniso.o
-uniso.so_LIBS = $(LIBS_UNISO) $(LUA_LIBS)
-uniso.so_LDFLAGS = -shared
+CFLAGS_lua-uniso.o = $(LUA_CFLAGS)
+OBJS_uniso.so = lua-uniso.o
+LIBS_uniso.so = $(UNISO_LIBS) $(LUA_LIBS)
+LDFLAGS_uniso.so = -shared
 
 ifneq ($(ENABLE_SHARED),)
 shlibs-y += $(SONAME) libuniso.so
 install-shlibs-y := $(INSTALLDIR) $(DESTDIR)$(libdir) && \
 		    $(INSTALL) $(SONAME) $(DESTDIR)$(libdir) && \
 		    ln -sf $(SONAME) $(DESTDIR)$(libdir)/libuniso.so
-LIBS_UNISO = -luniso
+UNISO_LIBS = -luniso
 else
-LIBS_UNISO = libuniso.a
+UNISO_LIBS = libuniso.a
 endif
 TARGETS += $(shlibs-y)
 
@@ -65,20 +65,20 @@ all:	$(TARGETS)
 libuniso.so:
 	ln -s $(SONAME) $@
 
-$(SONAME): $($(SONAME)_OBJS) libuniso.so
+$(SONAME): $(OBJS_$(SONAME)) libuniso.so
 uniso: $(shlib-y)
-uniso.so:  $(uniso.so_OBJS) $(shlibs-y) libuniso.a
+uniso.so:  $(OBJS_uniso.so) $(shlibs-y) libuniso.a
 
-libuniso.a: $(libuniso.a_OBJS)
+libuniso.a: $(OBJS_libuniso.a)
 	$(AR) rcs $@ $^
 	
 %.o: %.c
-	$(CC) $(CFLAGS) $($@_CFLAGS) -c $^
+	$(CC) $(CFLAGS) $(CFLAGS_$@) -c $^
 
-uniso: $(uniso_OBJS) $(shlibs-y) libuniso.a
+uniso: $(OBJS_uniso) $(shlibs-y) libuniso.a
 
 uniso $(SONAME) uniso.so: 
-	$(CC) $(LDFLAGS) $($@_LDFLAGS) -o $@ $($@_OBJS) $($@_LIBS)
+	$(CC) $(LDFLAGS) $(LDFLAGS_$@) -o $@ $(OBJS_$@) $(LIBS_$@)
 
 clean:
 	rm -f $(TARGETS) *.o *.a *.so *.so.$(ABI_VERSION)
