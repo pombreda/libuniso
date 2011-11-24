@@ -1,4 +1,9 @@
 
+#include <fcntl.h>
+#include <errno.h>
+#include <string.h>
+#include <unistd.h>
+
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
@@ -33,9 +38,23 @@ static void l_callback(size_t current, size_t total, const char *filename,
 
 static int l_uniso(lua_State *L)
 {
-	int fd = luaL_checkinteger(L, 1);
-	int result;
+	int fd, result;
 	struct l_uniso_context ctx;
+	const char *filename = NULL;
+
+	if (lua_isnumber(L, 1)) {
+		fd =luaL_checkinteger(L, 1);
+	} else if (lua_isstring(L, 1)) {
+		filename = luaL_checkstring(L, 1);
+		fd = open(filename, O_RDONLY);
+		if (fd < 0) {
+			lua_pushnil(L);
+			lua_pushstring(L, strerror(errno));
+			return 2;
+		}
+	} else {
+		luaL_typerror(L, 1, "integer or string");
+	}
 
 	if (!lua_isnil(L, 2))
 		luaL_checktype(L, 2, LUA_TFUNCTION);
@@ -43,6 +62,9 @@ static int l_uniso(lua_State *L)
 	ctx.L = L;
 
 	result = uniso(fd, &l_callback, &ctx);
+	if (filename != NULL)
+		close(fd);
+
 	lua_pushinteger(L, result);
 	return 1;
 }

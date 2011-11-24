@@ -18,4 +18,12 @@ To install:
 
   make install
 
+Example how to use Lua module:
+
+require("uniso")
+
+-- Use 0 for stdin
+print(uniso.uniso(arg[1] or 0, function(current, total, filename)
+	print(current, total, filename)
+end))
 
