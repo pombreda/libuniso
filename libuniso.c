@@ -212,7 +212,18 @@ struct uniso_context {
 	struct list_head parser_head;
 	struct uniso_reader volume_desc_reader;
 	unsigned char *tmpbuf;
+	size_t expected_size;
+	void (*update_progress)(size_t completed, size_t expected_size,
+							 char *filename, void *user_data);
+	void *user_data;
+	char *current_file;
 };
+
+static void update_progress(struct uniso_context *ctx)
+{
+	if (ctx->update_progress != NULL)
+		ctx->update_progress(ctx->pos, ctx->expected_size, ctx->current_file, ctx->user_data);
+}
 
 static int do_splice(struct uniso_context *ctx, int to_fd, int bytes)
 {
@@ -226,6 +237,7 @@ static int do_splice(struct uniso_context *ctx, int to_fd, int bytes)
 
 		bytes -= r;
 		ctx->pos += r;
+		update_progress(ctx);
 	} while (bytes != 0);
 
 	return 0;
@@ -244,6 +256,7 @@ static int do_read(struct uniso_context *ctx, unsigned char *buf, int bytes)
 		bytes -= r;
 		buf += r;
 		ctx->pos += r;
+		update_progress(ctx);
 	} while (bytes != 0);
 
 	return 0;
@@ -274,6 +287,7 @@ static int do_skip(struct uniso_context *ctx, unsigned int bytes)
 	case 0:
 		if (lseek(ctx->stream_fd, bytes, SEEK_CUR) != (off_t) -1) {
 			ctx->pos += bytes;
+			update_progress(ctx);
 			break;
 		}
 		ctx->skip_method = 1;
@@ -434,6 +448,7 @@ static int uniso_read_file(struct uniso_context *ctx,
 	if (fd < 0)
 		return -errno;
 
+	ctx->current_file = dir->name;
 	if (ctx->loglevel > 1)
 		fprintf(stderr, "%s : %d bytes, flags 0x%08x\n",
 			dir->name, dir->size, dir->flags);
@@ -554,6 +569,7 @@ static int uniso_read_volume_descriptor(struct uniso_context *ctx,
 				memcpy(root_dir, pd->root_directory_record, sizeof(root_dir));
 			break;
 		case ISOFS_VD_SUPPLEMENTARY:
+			ctx->expected_size = pd->volume_space_size.endianess * pd->logical_block_size.endianess;
 			if (pd->escape[0] == 0x25 && pd->escape[1] == 0x2f) {
 				switch (pd->escape[2]) {
 				case 0x45:
@@ -576,7 +592,8 @@ static int uniso_read_volume_descriptor(struct uniso_context *ctx,
 	return queue_dirent(ctx, root_dir, ".");
 }
 
-int uniso(int fd)
+int uniso(int fd, void (*progress_callback)(size_t, size_t, char*, void *),
+		void *user_data)
 {
 	struct uniso_context context, *ctx = &context;
 	struct uniso_reader *rd;
@@ -588,6 +605,8 @@ int uniso(int fd)
 	ctx->null_fd = open("/dev/null", O_RDWR);
 	ctx->tmpbuf = malloc(ISOFS_TMPBUF_SIZE);
 	ctx->loglevel = 1;
+	ctx->update_progress = progress_callback;
+	ctx->user_data = user_data;
 
 	queue_reader(ctx, &ctx->volume_desc_reader,
 		     16 * ISOFS_BLOCK_SIZE,
@@ -606,6 +625,9 @@ int uniso(int fd)
 		if (r != 0)
 			return r;
 	}
+	ctx->pos = ctx->expected_size;
+	ctx->current_file = "";
+	update_progress(ctx);
 
 	free(ctx->tmpbuf);
 	close(ctx->null_fd);

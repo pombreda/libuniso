@@ -3,5 +3,5 @@
 
 int main(int argc, char *argv[])
 {
-	return uniso(STDIN_FILENO);
+	return uniso(STDIN_FILENO, NULL, NULL);
 }
