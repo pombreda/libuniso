@@ -12,6 +12,10 @@
 
 #define MODULE_NAME "uniso"
 
+#ifndef VERSION
+#define VERSION "unknown version"
+#endif
+
 struct l_uniso_context {
 	lua_State *L;
 	int callback_ref;
@@ -77,6 +81,9 @@ static const luaL_reg methods[] = {
 LUALIB_API int luaopen_uniso(lua_State *L)
 {
 	luaL_openlib(L, MODULE_NAME, methods, 0);
+	lua_pushliteral(L, "version");
+	lua_pushliteral(L, VERSION);
+	lua_settable(L, -3);
 	return 1;
 }
 

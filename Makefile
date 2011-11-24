@@ -1,5 +1,15 @@
 -include config.mk
 
+VERSION = 0.1
+GIT_REV := $(shell test -d .git && git describe --always --dirty || echo exported)
+
+ifneq ($(GIT_REV), exported)
+FULL_VERSION := $(GIT_REV)
+FULL_VERSION := $(patsubst v%,%,$(FULL_VERSION))
+else
+FULL_VERSION := $(VERSION)
+endif
+
 ABI_VERSION := 0
 SONAME := libuniso.so.$(ABI_VERSION)
 
@@ -9,7 +19,7 @@ INCLUDES := uniso.h
 TARGETS = libuniso.a $(progs-y) $(shlibs-y) $(lualibs-y)
 
 CFLAGS ?= -g -Wall -Werror
-CFLAGS += -fPIC
+CFLAGS += -fPIC -I. -DVERSION=\"$(FULL_VERSION)\"
 CFLAGS += -I.
 
 LDFLAGS += -L.
