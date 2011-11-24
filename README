@@ -6,8 +6,13 @@ To build:
 
 To build with shared library:
 
-  echo "ENABLE_SHARED=yes" > config.mk
+  echo "ENABLE_SHARED=yes" >> config.mk
   make
+
+To build Lua module:
+
+  echo "ENABLE_SHARED=yes" >> config.mk
+  make 
 
 To install:
 

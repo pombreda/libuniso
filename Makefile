@@ -12,6 +12,7 @@ CFLAGS ?= -g -Wall -Werror
 CFLAGS += -fPIC
 CFLAGS += -I.
 
+LDFLAGS += -L.
 
 prefix ?= /usr
 libdir = $(prefix)/lib
@@ -20,6 +21,10 @@ includedir= $(prefix)/include
 
 INSTALLDIR := install -d
 INSTALL := install
+PKG_CONFIG ?= pkg-config
+
+LUA_LIBS ?= $(shell $(PKG_CONFIG) --libs lua)
+LUA_CFLAGS ?= $(shell $(PKG_CONFIG) --cflags lua)
 
 install-progs-y := $(INSTALLDIR) $(DESTDIR)$(bindir) && \
 		   $(INSTALL) $(progs-y) $(DESTDIR)$(bindir)
@@ -32,26 +37,37 @@ $(SONAME)_OBJS = $(libuniso.a_OBJS)
 $(SONAME)_LDFLAGS = -shared -Wl,-soname,$(SONAME)
 
 uniso_OBJS := uniso.o
-uniso_LDFLAGS += -L.
+uniso_LIBS = $(LIBS_UNISO)
 
-all:	$(TARGETS)
+lua-uniso.o_CFLAGS = $(LUA_CFLAGS)
+uniso.so_OBJS = lua-uniso.o
+uniso.so_LIBS = $(LIBS_UNISO) $(LUA_LIBS)
+uniso.so_LDFLAGS = -shared
 
 ifneq ($(ENABLE_SHARED),)
 shlibs-y += $(SONAME) libuniso.so
 install-shlibs-y := $(INSTALLDIR) $(DESTDIR)$(libdir) && \
 		    $(INSTALL) $(SONAME) $(DESTDIR)$(libdir) && \
 		    ln -sf $(SONAME) $(DESTDIR)$(libdir)/libuniso.so
-uniso_LIBS := -luniso
+LIBS_UNISO = -luniso
 else
-uniso_LIBS := libuniso.a
+LIBS_UNISO = libuniso.a
 endif
 TARGETS += $(shlibs-y)
 
-$(SONAME): $($(SONAME)_OBJS)
-libuniso.so: $(SONAME)
-	ln -s $< $@
+ifneq ($(ENABLE_LUA),)
+lualibs-y += uniso.so
+endif
+TARGETS += $(lualibs-y)
 
+all:	$(TARGETS)
+
+libuniso.so:
+	ln -s $(SONAME) $@
+
+$(SONAME): $($(SONAME)_OBJS) libuniso.so
 uniso: $(shlib-y)
+uniso.so:  $(uniso.so_OBJS) $(shlibs-y) libuniso.a
 
 libuniso.a: $(libuniso.a_OBJS)
 	$(AR) rcs $@ $^
@@ -59,15 +75,17 @@ libuniso.a: $(libuniso.a_OBJS)
 %.o: %.c
 	$(CC) $(CFLAGS) $($@_CFLAGS) -c $^
 
-uniso: $(uniso_OBJS) $(shlibs-y)
+uniso: $(uniso_OBJS) $(shlibs-y) libuniso.a
 
-uniso $(SONAME):
+uniso $(SONAME) uniso.so: 
 	$(CC) $(LDFLAGS) $($@_LDFLAGS) -o $@ $($@_OBJS) $($@_LIBS)
 
 clean:
 	rm -f $(TARGETS) *.o *.a *.so *.so.$(ABI_VERSION)
 
 shared: $(SONAME)
+
+lua: uniso.so
 
 install: $(TARGETS) $(INCLUDES)
 	$(INSTALLDIR) $(DESTDIR)$(includedir)
