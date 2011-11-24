@@ -1,4 +1,4 @@
-/* uniso.c - Unpack ISO9660 File System from a stream
+/* libuniso.c - Unpack ISO9660 File System from a stream
  *
  * Copyright (C) 2011 Timo Teräs <timo.teras@iki.fi>
  * All rights reserved.
@@ -14,7 +14,6 @@
 /*
  * TODO:
  * - fix unaligned 16-bit accesses from iso headers (ARM / MIPS)
- * - help, options, verbose logs
  */
 
 /* needed for SPLICE_F_MOVE */
@@ -31,6 +30,8 @@
 #include <string.h>
 #include <endian.h>
 #include <sys/stat.h>
+
+#include "uniso.h"
 
 /**/
 
@@ -214,7 +215,7 @@ struct uniso_context {
 	unsigned char *tmpbuf;
 	size_t expected_size;
 	void (*update_progress)(size_t completed, size_t expected_size,
-							 char *filename, void *user_data);
+				const char *filename, void *user_data);
 	void *user_data;
 	char *current_file;
 };
@@ -592,7 +593,7 @@ static int uniso_read_volume_descriptor(struct uniso_context *ctx,
 	return queue_dirent(ctx, root_dir, ".");
 }
 
-int uniso(int fd, void (*progress_callback)(size_t, size_t, char*, void *),
+int uniso(int fd, void (*progress_callback)(size_t, size_t, const char*, void *),
 		void *user_data)
 {
 	struct uniso_context context, *ctx = &context;
