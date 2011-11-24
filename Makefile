@@ -36,7 +36,7 @@ uniso_LDFLAGS += -L.
 
 all:	$(TARGETS)
 
-ifneq ($(ENABLE_SHARED_LIB),)
+ifneq ($(ENABLE_SHARED),)
 shlibs-y += $(SONAME) libuniso.so
 install-shlibs-y := $(INSTALLDIR) $(DESTDIR)$(libdir) && \
 		    $(INSTALL) $(SONAME) $(DESTDIR)$(libdir) && \
